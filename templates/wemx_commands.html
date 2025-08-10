@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WemX Admin - Commands</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/flowbite@2.5.1/dist/flowbite.min.css" rel="stylesheet" />
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {"50":"#eff6ff","100":"#dbeafe","200":"#bfdbfe","300":"#93c5fd","400":"#60a5fa","500":"#3b82f6","600":"#2563eb","700":"#1d4ed8","800":"#1e40af","900":"#1e3a8a","950":"#172554"},
+                        wemx: {"50":"#f0f9ff","100":"#e0f2fe","200":"#bae6fd","300":"#7dd3fc","400":"#38bdf8","500":"#0ea5e9","600":"#0284c7","700":"#0369a1","800":"#075985","900":"#0c4a6e","950":"#082f49"}
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-gray-800 border-gray-700 px-4 lg:px-6 py-2.5">
+        <div class="flex flex-wrap justify-between items-center mx-auto max-w-screen-xl">
+            <a href="/" class="flex items-center">
+                <div class="w-8 h-8 bg-gradient-to-r from-wemx-500 to-blue-600 rounded-lg flex items-center justify-center mr-3">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                </div>
+                <span class="self-center text-xl font-semibold whitespace-nowrap text-white">WemX Admin</span>
+            </a>
+            <div class="flex items-center lg:order-2">
+                <div class="hidden mt-2 mr-4 sm:inline-block">
+                    <span class="text-sm text-gray-300">Commands</span>
+                </div>
+            </div>
+            <div class="hidden justify-between items-center w-full lg:flex lg:w-auto lg:order-1">
+                <ul class="flex flex-col mt-4 font-medium lg:flex-row lg:space-x-8 lg:mt-0">
+                    <li>
+                        <a href="/" class="block py-2 pr-4 pl-3 text-gray-400 border-b border-gray-100 hover:bg-gray-50 lg:hover:bg-transparent lg:border-0 lg:hover:text-wemx-500 lg:p-0">.env Editor</a>
+                    </li>
+                    <li>
+                        <a href="/nginx-config" class="block py-2 pr-4 pl-3 text-gray-400 border-b border-gray-100 hover:bg-gray-50 lg:hover:bg-transparent lg:border-0 lg:hover:text-wemx-500 lg:p-0">Nginx Config</a>
+                    </li>
+                    <li>
+                        <a href="/license" class="block py-2 pr-4 pl-3 text-gray-400 border-b border-gray-100 hover:bg-gray-50 lg:hover:bg-transparent lg:border-0 lg:hover:text-wemx-500 lg:p-0">License</a>
+                    </li>
+                    <li>
+                        <a href="/commands" class="block py-2 pr-4 pl-3 text-white bg-wemx-700 rounded lg:bg-transparent lg:text-wemx-500 lg:p-0" aria-current="page">Commands</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="p-6 max-w-6xl mx-auto">
+        <!-- WemX Management Section -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold text-white mb-6">WemX Management</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Clear Cache -->
+                <div class="bg-gray-800 border border-gray-700 rounded-lg shadow-sm">
+                    <div class="p-6">
+                        <h3 class="text-lg font-semibold text-white mb-2">Clear Cache</h3>
+                        <p class="text-sm text-gray-400 mb-4">Clear all WemX caches (config, route, view, cache)</p>
+                        <button onclick="clearCache()" class="w-full text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
+                            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                            Clear All Cache
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Restart Services -->
+                <div class="bg-gray-800 border border-gray-700 rounded-lg shadow-sm">
+                    <div class="p-6">
+                        <h3 class="text-lg font-semibold text-white mb-2">Restart Services</h3>
+                        <p class="text-sm text-gray-400 mb-4">Restart WemX, Nginx, and PHP-FPM services</p>
+                        <button onclick="restartWemx()" class="w-full text-white bg-orange-700 hover:bg-orange-800 focus:ring-4 focus:outline-none focus:ring-orange-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
+                            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                            Restart Services
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Fix Permissions -->
+                <div class="bg-gray-800 border border-gray-700 rounded-lg shadow-sm">
+                    <div class="p-6">
+                        <h3 class="text-lg font-semibold text-white mb-2">Fix Permissions</h3>
+                        <p class="text-sm text-gray-400 mb-4">Fix WemX file and folder permissions</p>
+                        <button onclick="updatePermissions()" class="w-full text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
+                            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                            </svg>
+                            Fix Permissions
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ubuntu User Management Section -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold text-white mb-6">Ubuntu User Management</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Create User -->
+                <div class="bg-gray-800 border border-gray-700 rounded-lg shadow-sm">
+                    <div class="p-6">
+                        <h3 class="text-lg font-semibold text-white mb-2">Create User</h3>
+                        <p class="text-sm text-gray-400 mb-4">Create a new Ubuntu system user</p>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block mb-2 text-sm font-medium text-gray-300">Username</label>
+                                <input type="text" id="create-username" class="bg-gray-600 border border-gray-500 text-white text-sm rounded-lg focus:ring-wemx-500 focus:border-wemx-500 block w-full p-2.5 placeholder-gray-400" placeholder="username">
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-sm font-medium text-gray-300">Password</label>
+                                <input type="password" id="create-password" class="bg-gray-600 border border-gray-500 text-white text-sm rounded-lg focus:ring-wemx-500 focus:border-wemx-500 block w-full p-2.5 placeholder-gray-400" placeholder="password">
+                            </div>
+                            <button onclick="createUser()" class="w-full text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
+                                Create User
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Delete User -->
+                <div class="bg-gray-800 border border-gray-700 rounded-lg shadow-sm">
+                    <div class="p-6">
+                        <h3 class="text-lg font-semibold text-white mb-2">Delete User</h3>
+                        <p class="text-sm text-gray-400 mb-4">Remove an Ubuntu system user</p>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block mb-2 text-sm font-medium text-gray-300">Select User</label>
+                                <select id="delete-username" class="bg-gray-600 border border-gray-500 text-white text-sm rounded-lg focus:ring-wemx-500 focus:border-wemx-500 block w-full p-2.5">
+                                    <option value="">Choose a user...</option>
+                                    {% for user in system_users %}
+                                    <option value="{{ user }}">{{ user }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <button onclick="deleteUser()" class="w-full text-red-400 hover:text-white border border-red-400 hover:bg-red-500 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
+                                Delete User
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reset Password -->
+                <div class="bg-gray-800 border border-gray-700 rounded-lg shadow-sm">
+                    <div class="p-6">
+                        <h3 class="text-lg font-semibold text-white mb-2">Reset Password</h3>
+                        <p class="text-sm text-gray-400 mb-4">Change a user's password</p>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block mb-2 text-sm font-medium text-gray-300">Select User</label>
+                                <select id="reset-username" class="bg-gray-600 border border-gray-500 text-white text-sm rounded-lg focus:ring-wemx-500 focus:border-wemx-500 block w-full p-2.5">
+                                    <option value="">Choose a user...</option>
+                                    {% for user in system_users %}
+                                    <option value="{{ user }}">{{ user }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-sm font-medium text-gray-300">New Password</label>
+                                <input type="password" id="reset-password" class="bg-gray-600 border border-gray-500 text-white text-sm rounded-lg focus:ring-wemx-500 focus:border-wemx-500 block w-full p-2.5 placeholder-gray-400" placeholder="new password">
+                            </div>
+                            <button onclick="resetPassword()" class="w-full text-white bg-yellow-700 hover:bg-yellow-800 focus:ring-4 focus:outline-none focus:ring-yellow-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
+                                Reset Password
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Status -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold text-white mb-6">System Status</h2>
+            
+            <div class="bg-gray-800 border border-gray-700 rounded-lg shadow-sm">
+                <div class="p-6">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="text-center">
+                            <div id="wemx-status" class="w-4 h-4 rounded-full bg-gray-500 mx-auto mb-2"></div>
+                            <p class="text-sm text-gray-400">WemX Directory</p>
+                        </div>
+                        <div class="text-center">
+                            <div id="env-status" class="w-4 h-4 rounded-full bg-gray-500 mx-auto mb-2"></div>
+                            <p class="text-sm text-gray-400">.env File</p>
+                        </div>
+                        <div class="text-center">
+                            <div id="nginx-status" class="w-4 h-4 rounded-full bg-gray-500 mx-auto mb-2"></div>
+                            <p class="text-sm text-gray-400">Nginx</p>
+                        </div>
+                        <div class="text-center">
+                            <div id="php-status" class="w-4 h-4 rounded-full bg-gray-500 mx-auto mb-2"></div>
+                            <p class="text-sm text-gray-400">PHP-FPM</p>
+                        </div>
+                    </div>
+                    <button onclick="checkStatus()" class="w-full mt-4 text-white bg-gray-700 hover:bg-gray-600 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
+                        Refresh Status
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Command Output -->
+        <div id="output-section" class="hidden mb-8">
+            <h3 class="text-lg font-semibold text-white mb-4">Command Output</h3>
+            <div class="bg-gray-800 border border-gray-700 rounded-lg p-4">
+                <pre id="command-output" class="text-sm text-gray-300 whitespace-pre-wrap"></pre>
+            </div>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loading" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
+            <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                <div class="flex items-center space-x-3">
+                    <svg class="animate-spin h-5 w-5 text-wemx-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="text-white">Executing command...</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/flowbite@2.5.1/dist/flowbite.min.js"></script>
+    <script>
+        function showLoading() {
+            document.getElementById('loading').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').classList.add('hidden');
+        }
+
+        function showOutput(output, isError = false) {
+            const outputSection = document.getElementById('output-section');
+            const outputElement = document.getElementById('command-output');
+            
+            outputElement.textContent = output;
+            outputElement.className = `text-sm whitespace-pre-wrap ${isError ? 'text-red-400' : 'text-green-400'}`;
+            outputSection.classList.remove('hidden');
+            
+            // Scroll to output
+            outputSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function executeCommand(url, data = {}) {
+            showLoading();
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showOutput(result.output || 'Command executed successfully');
+                } else {
+                    showOutput(`Error: ${result.error}`, true);
+                }
+            } catch (error) {
+                showOutput(`Network Error: ${error.message}`, true);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function clearCache() {
+            if (confirm('Clear all WemX caches? This may temporarily slow down your site.')) {
+                executeCommand('/clear-cache');
+            }
+        }
+
+        function restartWemx() {
+            if (confirm('Restart WemX services? This will briefly interrupt service.')) {
+                executeCommand('/restart-wemx');
+            }
+        }
+
+        function updatePermissions() {
+            if (confirm('Fix WemX file permissions? This may take a moment.')) {
+                executeCommand('/update-permissions');
+            }
+        }
+
+        function createUser() {
+            const username = document.getElementById('create-username').value.trim();
+            const password = document.getElementById('create-password').value;
+            
+            if (!username || !password) {
+                alert('Please enter both username and password');
+                return;
+            }
+            
+            if (!/^[a-z][a-z0-9_-]*$/.test(username)) {
+                alert('Username must start with a lowercase letter and contain only lowercase letters, numbers, hyphens, and underscores');
+                return;
+            }
+            
+            if (confirm(`Create user: ${username}?`)) {
+                executeCommand('/create-user', { username: username, password: password }).then(() => {
+                    document.getElementById('create-username').value = '';
+                    document.getElementById('create-password').value = '';
+                    setTimeout(() => location.reload(), 2000);
+                });
+            }
+        }
+
+        function deleteUser() {
+            const username = document.getElementById('delete-username').value;
+            
+            if (!username) {
+                alert('Please select a user to delete');
+                return;
+            }
+            
+            if (confirm(`⚠️ WARNING: This will permanently delete user "${username}" and their home directory. This action cannot be undone!\n\nAre you absolutely sure?`)) {
+                executeCommand('/delete-user', { username: username }).then(() => {
+                    setTimeout(() => location.reload(), 2000);
+                });
+            }
+        }
+
+        function resetPassword() {
+            const username = document.getElementById('reset-username').value;
+            const password = document.getElementById('reset-password').value;
+            
+            if (!username || !password) {
+                alert('Please select a user and enter a new password');
+                return;
+            }
+            
+            if (confirm(`Reset password for user: ${username}?`)) {
+                executeCommand('/reset-password', { username: username, password: password }).then(() => {
+                    document.getElementById('reset-password').value = '';
+                });
+            }
+        }
+
+        async function checkStatus() {
+            try {
+                const response = await fetch('/status');
+                const status = await response.json();
+                
+                // Update status indicators
+                document.getElementById('wemx-status').className = 
+                    `w-4 h-4 rounded-full mx-auto mb-2 ${status.wemx_directory ? 'bg-green-500' : 'bg-red-500'}`;
+                document.getElementById('env-status').className = 
+                    `w-4 h-4 rounded-full mx-auto mb-2 ${status.env_file ? 'bg-green-500' : 'bg-red-500'}`;
+                document.getElementById('nginx-status').className = 
+                    `w-4 h-4 rounded-full mx-auto mb-2 ${status.nginx ? 'bg-green-500' : 'bg-red-500'}`;
+                document.getElementById('php-status').className = 
+                    `w-4 h-4 rounded-full mx-auto mb-2 ${status.php_fpm ? 'bg-green-500' : 'bg-red-500'}`;
+                    
+            } catch (error) {
+                console.error('Status check failed:', error);
+            }
+        }
+
+        // Check status on page load
+        document.addEventListener('DOMContentLoaded', checkStatus);
+
+        // Clear output when switching between different actions
+        document.addEventListener('click', function(e) {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') {
+                document.getElementById('output-section').classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

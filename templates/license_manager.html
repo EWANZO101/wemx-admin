@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WemX Admin - License Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/flowbite@2.5.1/dist/flowbite.min.css" rel="stylesheet" />
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {"50":"#eff6ff","100":"#dbeafe","200":"#bfdbfe","300":"#93c5fd","400":"#60a5fa","500":"#3b82f6","600":"#2563eb","700":"#1d4ed8","800":"#1e40af","900":"#1e3a8a","950":"#172554"},
+                        wemx: {"50":"#f0f9ff","100":"#e0f2fe","200":"#bae6fd","300":"#7dd3fc","400":"#38bdf8","500":"#0ea5e9","600":"#0284c7","700":"#0369a1","800":"#075985","900":"#0c4a6e","950":"#082f49"}
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-gray-800 border-gray-700 px-4 lg:px-6 py-2.5">
+        <div class="flex flex-wrap justify-between items-center mx-auto max-w-screen-xl">
+            <a href="/" class="flex items-center">
+                <div class="w-8 h-8 bg-gradient-to-r from-wemx-500 to-blue-600 rounded-lg flex items-center justify-center mr-3">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+                    </svg>
+                </div>
+                <span class="self-center text-xl font-semibold whitespace-nowrap text-white">WemX Admin</span>
+            </a>
+            <div class="flex items-center lg:order-2">
+                <div class="hidden mt-2 mr-4 sm:inline-block">
+                    <span class="text-sm text-gray-300">License Manager</span>
+                </div>
+            </div>
+            <div class="hidden justify-between items-center w-full lg:flex lg:w-auto lg:order-1">
+                <ul class="flex flex-col mt-4 font-medium lg:flex-row lg:space-x-8 lg:mt-0">
+                    <li>
+                        <a href="/" class="block py-2 pr-4 pl-3 text-gray-400 border-b border-gray-100 hover:bg-gray-50 lg:hover:bg-transparent lg:border-0 lg:hover:text-wemx-500 lg:p-0">.env Editor</a>
+                    </li>
+                    <li>
+                        <a href="/nginx-config" class="block py-2 pr-4 pl-3 text-gray-400 border-b border-gray-100 hover:bg-gray-50 lg:hover:bg-transparent lg:border-0 lg:hover:text-wemx-500 lg:p-0">Nginx Config</a>
+                    </li>
+                    <li>
+                        <a href="/license" class="block py-2 pr-4 pl-3 text-white bg-wemx-700 rounded lg:bg-transparent lg:text-wemx-500 lg:p-0" aria-current="page">License</a>
+                    </li>
+                    <li>
+                        <a href="/commands" class="block py-2 pr-4 pl-3 text-gray-400 border-b border-gray-100 hover:bg-gray-50 lg:hover:bg-transparent lg:border-0 lg:hover:text-wemx-500 lg:p-0">Commands</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="p-6 max-w-4xl mx-auto">
+        <!-- License Management Section -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold text-white mb-6">WemX License Management</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Update License -->
+                <div class="bg-gray-800 border border-gray-700 rounded-lg shadow-sm">
+                    <div class="p-6 border-b border-gray-700">
+                        <h3 class="text-lg font-semibold text-white mb-2">Update License</h3>
+                        <p class="text-sm text-gray-400">Enter your WemX license key to activate or update your license</p>
+                    </div>
+                    
+                    <div class="p-6">
+                        <form onsubmit="return false;">
+                            <div class="mb-4">
+                                <label for="license-key" class="block mb-2 text-sm font-medium text-gray-300">License Key</label>
+                                <textarea id="license-key" rows="4" 
+                                        class="bg-gray-600 border border-gray-500 text-white text-sm rounded-lg focus:ring-wemx-500 focus:border-wemx-500 block w-full p-2.5 placeholder-gray-400 font-mono" 
+                                        placeholder="Enter your WemX license key here..."></textarea>
+                                <p class="mt-1 text-xs text-blue-400 flex items-center">
+                                    <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    Paste your complete license key from WemX
+                                </p>
+                            </div>
+                            
+                            <button onclick="updateLicense()" 
+                                    class="w-full text-white bg-wemx-600 hover:bg-wemx-700 focus:ring-4 focus:outline-none focus:ring-wemx-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
+                                <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+                                </svg>
+                                Update License
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Check License Status -->
+                <div class="bg-gray-800 border border-gray-700 rounded-lg shadow-sm">
+                    <div class="p-6 border-b border-gray-700">
+                        <h3 class="text-lg font-semibold text-white mb-2">License Status</h3>
+                        <p class="text-sm text-gray-400">Check your current WemX license information</p>
+                    </div>
+                    
+                    <div class="p-6">
+                        <div id="license-status" class="mb-4 p-3 rounded-lg bg-gray-700 border border-gray-600">
+                            <div class="flex items-center justify-center text-gray-400">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <span>Click "Check License" to view status</span>
+                            </div>
+                        </div>
+                        
+                        <button onclick="checkLicense()" 
+                                class="w-full text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
+                            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Check License Status
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- License Information -->
+        <div class="mb-8">
+            <div class="bg-gray-800 border border-gray-700 rounded-lg shadow-sm">
+                <div class="p-6 border-b border-gray-700">
+                    <h3 class="text-lg font-semibold text-white mb-2">License Information</h3>
+                </div>
+                
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                        <div class="p-4 bg-gray-700 rounded-lg">
+                            <div class="text-2xl font-bold text-wemx-400 mb-1">🔑</div>
+                            <p class="text-sm text-gray-300">License Key</p>
+                            <p class="text-xs text-gray-400">Activates WemX features</p>
+                        </div>
+                        
+                        <div class="p-4 bg-gray-700 rounded-lg">
+                            <div class="text-2xl font-bold text-wemx-400 mb-1">⚡</div>
+                            <p class="text-sm text-gray-300">Artisan Command</p>
+                            <p class="text-xs text-gray-400">php artisan license:update</p>
+                        </div>
+                        
+                        <div class="p-4 bg-gray-700 rounded-lg">
+                            <div class="text-2xl font-bold text-wemx-400 mb-1">✅</div>
+                            <p class="text-sm text-gray-300">Auto Validation</p>
+                            <p class="text-xs text-gray-400">Validates with WemX servers</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Important Notes -->
+        <div class="mb-8">
+            <div class="bg-blue-900/30 border border-blue-800 rounded-lg p-4">
+                <h4 class="text-sm font-medium text-blue-300 mb-2 flex items-center">
+                    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                    </svg>
+                    Important Notes
+                </h4>
+                <ul class="text-xs text-blue-200 space-y-1">
+                    <li>• Your license key is provided when you purchase WemX</li>
+                    <li>• The license is validated automatically with WemX servers</li>
+                    <li>• A valid license is required for WemX to function properly</li>
+                    <li>• Keep your license key secure and do not share it</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Command Output -->
+        <div id="output-section" class="hidden mb-8">
+            <h3 class="text-lg font-semibold text-white mb-4">Command Output</h3>
+            <div class="bg-gray-800 border border-gray-700 rounded-lg p-4">
+                <pre id="command-output" class="text-sm text-gray-300 whitespace-pre-wrap"></pre>
+            </div>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loading" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
+            <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                <div class="flex items-center space-x-3">
+                    <svg class="animate-spin h-5 w-5 text-wemx-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="text-white">Processing license...</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/flowbite@2.5.1/dist/flowbite.min.js"></script>
+    <script>
+        function showLoading() {
+            document.getElementById('loading').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').classList.add('hidden');
+        }
+
+        function showOutput(output, isError = false) {
+            const outputSection = document.getElementById('output-section');
+            const outputElement = document.getElementById('command-output');
+            
+            outputElement.textContent = output;
+            outputElement.className = `text-sm whitespace-pre-wrap ${isError ? 'text-red-400' : 'text-green-400'}`;
+            outputSection.classList.remove('hidden');
+            
+            // Scroll to output
+            outputSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function updateLicenseStatus(status, isValid = null) {
+            const statusElement = document.getElementById('license-status');
+            
+            let statusClass = 'bg-gray-700 border-gray-600';
+            let iconColor = 'text-gray-400';
+            let icon = `<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>`;
+            
+            if (isValid === true) {
+                statusClass = 'bg-green-900/50 border-green-800';
+                iconColor = 'text-green-400';
+                icon = `<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>`;
+            } else if (isValid === false) {
+                statusClass = 'bg-red-900/50 border-red-800';
+                iconColor = 'text-red-400';
+                icon = `<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>`;
+            }
+            
+            statusElement.className = `mb-4 p-3 rounded-lg ${statusClass}`;
+            statusElement.innerHTML = `
+                <div class="flex items-center ${iconColor}">
+                    ${icon}
+                    <span class="text-sm">${status}</span>
+                </div>
+            `;
+        }
+
+        async function updateLicense() {
+            const licenseKey = document.getElementById('license-key').value.trim();
+            
+            if (!licenseKey) {
+                alert('Please enter a license key');
+                return;
+            }
+            
+            if (!confirm('Update WemX license with this key?\n\nThis will validate the license with WemX servers.')) {
+                return;
+            }
+            
+            showLoading();
+            try {
+                const response = await fetch('/update-license', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        license_key: licenseKey
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showOutput('✅ ' + result.message + '\n\n' + result.output);
+                    updateLicenseStatus('License updated successfully!', true);
+                    
+                    // Clear the license key field for security
+                    document.getElementById('license-key').value = '';
+                } else {
+                    showOutput('❌ License update failed:\n\n' + (result.output || result.error), true);
+                    updateLicenseStatus('License update failed', false);
+                }
+            } catch (error) {
+                showOutput(`Network Error: ${error.message}`, true);
+                updateLicenseStatus('Error checking license', false);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function checkLicense() {
+            showLoading();
+            try {
+                const response = await fetch('/check-license', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showOutput(result.output);
+                    
+                    if (result.valid) {
+                        updateLicenseStatus('License is valid and active', true);
+                    } else {
+                        updateLicenseStatus('License validation failed or expired', false);
+                    }
+                } else {
+                    showOutput('❌ Error checking license: ' + result.error, true);
+                    updateLicenseStatus('Error checking license status', false);
+                }
+            } catch (error) {
+                showOutput(`Network Error: ${error.message}`, true);
+                updateLicenseStatus('Network error occurred', false);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Clear output when editing license key
+        document.getElementById('license-key').addEventListener('focus', function() {
+            document.getElementById('output-section').classList.add('hidden');
+        });
+
+        // Auto-resize textarea
+        document.getElementById('license-key').addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+        });
+    </script>
+</body>
+</html>

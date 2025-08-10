@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WemX Admin - Nginx Configuration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/flowbite@2.5.1/dist/flowbite.min.css" rel="stylesheet" />
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {"50":"#eff6ff","100":"#dbeafe","200":"#bfdbfe","300":"#93c5fd","400":"#60a5fa","500":"#3b82f6","600":"#2563eb","700":"#1d4ed8","800":"#1e40af","900":"#1e3a8a","950":"#172554"},
+                        wemx: {"50":"#f0f9ff","100":"#e0f2fe","200":"#bae6fd","300":"#7dd3fc","400":"#38bdf8","500":"#0ea5e9","600":"#0284c7","700":"#0369a1","800":"#075985","900":"#0c4a6e","950":"#082f49"}
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-gray-800 border-gray-700 px-4 lg:px-6 py-2.5">
+        <div class="flex flex-wrap justify-between items-center mx-auto max-w-screen-xl">
+            <a href="/" class="flex items-center">
+                <div class="w-8 h-8 bg-gradient-to-r from-wemx-500 to-blue-600 rounded-lg flex items-center justify-center mr-3">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                </div>
+                <span class="self-center text-xl font-semibold whitespace-nowrap text-white">WemX Admin</span>
+            </a>
+            <div class="flex items-center lg:order-2">
+                <div class="hidden mt-2 mr-4 sm:inline-block">
+                    <span class="text-sm text-gray-300">Nginx Configuration</span>
+                </div>
+            </div>
+            <div class="hidden justify-between items-center w-full lg:flex lg:w-auto lg:order-1">
+                <ul class="flex flex-col mt-4 font-medium lg:flex-row lg:space-x-8 lg:mt-0">
+                    <li>
+                        <a href="/" class="block py-2 pr-4 pl-3 text-gray-400 border-b border-gray-100 hover:bg-gray-50 lg:hover:bg-transparent lg:border-0 lg:hover:text-wemx-500 lg:p-0">.env Editor</a>
+                    </li>
+                    <li>
+                        <a href="/nginx-config" class="block py-2 pr-4 pl-3 text-white bg-wemx-700 rounded lg:bg-transparent lg:text-wemx-500 lg:p-0" aria-current="page">Nginx Config</a>
+                    </li>
+                    <li>
+                        <a href="/license" class="block py-2 pr-4 pl-3 text-gray-400 border-b border-gray-100 hover:bg-gray-50 lg:hover:bg-transparent lg:border-0 lg:hover:text-wemx-500 lg:p-0">License</a>
+                    </li>
+                    <li>
+                        <a href="/commands" class="block py-2 pr-4 pl-3 text-gray-400 border-b border-gray-100 hover:bg-gray-50 lg:hover:bg-transparent lg:border-0 lg:hover:text-wemx-500 lg:p-0">Commands</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="p-6 max-w-6xl mx-auto">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flex items-center p-4 mb-4 text-sm rounded-lg {% if category == 'error' %}text-red-800 border border-red-300 bg-red-50 dark:bg-gray-800 dark:text-red-400 dark:border-red-800{% else %}text-green-800 border border-green-300 bg-green-50 dark:bg-gray-800 dark:text-green-400 dark:border-green-800{% endif %}" role="alert">
+                        <svg class="flex-shrink-0 inline w-4 h-4 me-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3H8a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z"/>
+                        </svg>
+                        <span class="sr-only">Info</span>
+                        <div><span class="font-medium">{{ message }}</span></div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Nginx Configuration Editor Card -->
+        <div class="bg-gray-800 border border-gray-700 rounded-lg shadow-sm">
+            <div class="p-6 border-b border-gray-700">
+                <h3 class="text-lg font-semibold text-white mb-2">Nginx Configuration Editor</h3>
+                <p class="text-sm text-gray-400 mb-3">Edit your WemX Nginx server configuration</p>
+                
+                <!-- Important Notice -->
+                <div class="flex items-center p-3 text-sm text-yellow-300 bg-yellow-900/30 border border-yellow-800 rounded-lg">
+                    <svg class="flex-shrink-0 inline w-4 h-4 me-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span><strong>Warning:</strong> Incorrect nginx configuration can break your website. Always test configuration before reloading!</span>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <!-- Action Buttons -->
+                <div class="flex flex-wrap gap-3 mb-6">
+                    <button onclick="testConfig()" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Test Configuration
+                    </button>
+                    
+                    <button onclick="saveConfig()" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-wemx-600 border border-transparent rounded-lg hover:bg-wemx-700 focus:ring-4 focus:ring-wemx-300">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+                        </svg>
+                        Save Configuration
+                    </button>
+                    
+                    <button onclick="reloadNginx()" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 focus:ring-4 focus:ring-green-300">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        Reload Nginx
+                    </button>
+                </div>
+
+                <!-- Configuration Editor -->
+                <form onsubmit="return false;">
+                    <div class="mb-4">
+                        <label for="config-editor" class="block mb-2 text-sm font-medium text-gray-300">Configuration Content</label>
+                        <textarea id="config-editor" name="config_content" rows="25" 
+                                class="bg-gray-700 border border-gray-600 text-white text-sm font-mono rounded-lg focus:ring-wemx-500 focus:border-wemx-500 block w-full p-3 placeholder-gray-400" 
+                                placeholder="Enter nginx configuration here...">{{ config_content }}</textarea>
+                        <p class="mt-1 text-xs text-gray-400">
+                            <svg class="w-3 h-3 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                            </svg>
+                            Use proper nginx syntax. Test before saving to avoid breaking your site.
+                        </p>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- File Info -->
+        <div class="mt-6 p-4 bg-gray-800 border border-gray-700 rounded-lg">
+            <h4 class="text-sm font-medium text-gray-300 mb-2">File Information</h4>
+            <p class="text-xs text-gray-400">Editing: <code class="bg-gray-700 px-2 py-1 rounded">/etc/nginx/sites-available/wemx.conf</code></p>
+            <p class="text-xs text-gray-400 mt-1">Backup files are automatically created when saving changes</p>
+            <p class="text-xs text-gray-400 mt-1">🔧 Changes take effect after reloading nginx</p>
+        </div>
+
+        <!-- Command Output -->
+        <div id="output-section" class="hidden mt-6">
+            <h3 class="text-lg font-semibold text-white mb-4">Command Output</h3>
+            <div class="bg-gray-800 border border-gray-700 rounded-lg p-4">
+                <pre id="command-output" class="text-sm text-gray-300 whitespace-pre-wrap"></pre>
+            </div>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loading" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
+            <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                <div class="flex items-center space-x-3">
+                    <svg class="animate-spin h-5 w-5 text-wemx-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="text-white">Processing...</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/flowbite@2.5.1/dist/flowbite.min.js"></script>
+    <script>
+        function showLoading() {
+            document.getElementById('loading').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').classList.add('hidden');
+        }
+
+        function showOutput(output, isError = false) {
+            const outputSection = document.getElementById('output-section');
+            const outputElement = document.getElementById('command-output');
+            
+            outputElement.textContent = output;
+            outputElement.className = `text-sm whitespace-pre-wrap ${isError ? 'text-red-400' : 'text-green-400'}`;
+            outputSection.classList.remove('hidden');
+            
+            // Scroll to output
+            outputSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function testConfig() {
+            showLoading();
+            try {
+                const response = await fetch('/test-nginx-config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showOutput(result.output + '\n\n✅ ' + result.message);
+                } else {
+                    showOutput(result.output + '\n\n❌ ' + result.error, true);
+                }
+            } catch (error) {
+                showOutput(`Network Error: ${error.message}`, true);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function saveConfig() {
+            const configContent = document.getElementById('config-editor').value;
+            
+            if (!configContent.trim()) {
+                alert('Configuration cannot be empty');
+                return;
+            }
+            
+            if (!confirm('Are you sure you want to save this nginx configuration?\n\nThis will overwrite the current configuration file.')) {
+                return;
+            }
+            
+            showLoading();
+            try {
+                const response = await fetch('/save-nginx-config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        config_content: configContent
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showOutput('✅ ' + result.message + '\n\nNext step: Test configuration and reload nginx');
+                } else {
+                    showOutput('❌ Error saving configuration: ' + result.error, true);
+                }
+            } catch (error) {
+                showOutput(`Network Error: ${error.message}`, true);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function reloadNginx() {
+            if (!confirm('Reload nginx with current configuration?\n\nThis will apply changes and may briefly interrupt service if there are configuration errors.')) {
+                return;
+            }
+            
+            showLoading();
+            try {
+                const response = await fetch('/reload-nginx', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showOutput('✅ ' + result.output + '\n\nNginx reloaded successfully!');
+                } else {
+                    showOutput('❌ Failed to reload nginx: ' + result.error, true);
+                }
+            } catch (error) {
+                showOutput(`Network Error: ${error.message}`, true);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Auto-save warning
+        let configChanged = false;
+        document.getElementById('config-editor').addEventListener('input', function() {
+            configChanged = true;
+        });
+
+        window.addEventListener('beforeunload', function(e) {
+            if (configChanged) {
+                e.preventDefault();
+                e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+            }
+        });
+
+        // Clear output when editing
+        document.getElementById('config-editor').addEventListener('focus', function() {
+            document.getElementById('output-section').classList.add('hidden');
+        });
+    </script>
+</body>
+</html>
