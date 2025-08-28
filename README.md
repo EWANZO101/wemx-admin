@@ -162,7 +162,8 @@ sudo ufw allow 443/tcp
 # IP addresses allowed to access admin panel
 WHITELISTED_IPS = [
     '127.0.0.1',        # localhost
-    '::1',              # localhost IPv6
+    '::1',
+     '92.25.173.186',         # localhost IPv6
     '192.168.1.100',    # Your IP address
     # Add more IPs as needed
 ]
