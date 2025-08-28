@@ -4,12 +4,54 @@ import subprocess
 import shutil
 from datetime import datetime
 import re
+import pwd
+import grp
 from wemx_config import WHITELISTED_IPS
 
 app = Flask(__name__)
 app.secret_key = 'wemx-secret-key-change-this'
 
 ENV_FILE_PATH = '/var/www/wemx/.env'
+
+def check_root_permissions():
+    """Check if running with sufficient privileges"""
+    return os.geteuid() == 0
+
+def run_command_with_privileges(command, timeout=30, shell=True, cwd=None):
+    """Run command with proper error handling and privileges"""
+    try:
+        if isinstance(command, str) and not shell:
+            command = command.split()
+        
+        result = subprocess.run(
+            command, 
+            shell=shell,
+            capture_output=True, 
+            text=True, 
+            timeout=timeout,
+            cwd=cwd
+        )
+        
+        return {
+            'success': result.returncode == 0,
+            'stdout': result.stdout,
+            'stderr': result.stderr,
+            'returncode': result.returncode
+        }
+    except subprocess.TimeoutExpired:
+        return {
+            'success': False,
+            'stdout': '',
+            'stderr': 'Command timed out',
+            'returncode': -1
+        }
+    except Exception as e:
+        return {
+            'success': False,
+            'stdout': '',
+            'stderr': str(e),
+            'returncode': -1
+        }
 
 def check_ip():
     """Check if the request IP is whitelisted"""
@@ -20,33 +62,57 @@ def check_ip():
 
 @app.before_request
 def before_request():
-    """Check IP whitelist before each request"""
+    """Check IP whitelist and permissions before each request"""
     if not check_ip():
         return redirect('https://acd.swiftpeakhosting.com/')
+    
+    # Log permission status
+    if not check_root_permissions():
+        app.logger.warning("Application not running with root privileges - some functions may fail")
 
 def parse_env_file(file_path):
     """Parse .env file into key-value pairs"""
     env_vars = {}
     if os.path.exists(file_path):
-        with open(file_path, 'r') as f:
-            for line_num, line in enumerate(f, 1):
-                line = line.strip()
-                if line and not line.startswith('#'):
-                    if '=' in line:
-                        key, value = line.split('=', 1)
-                        env_vars[key.strip()] = value.strip()
+        try:
+            with open(file_path, 'r') as f:
+                for line_num, line in enumerate(f, 1):
+                    line = line.strip()
+                    if line and not line.startswith('#'):
+                        if '=' in line:
+                            key, value = line.split('=', 1)
+                            env_vars[key.strip()] = value.strip()
+        except PermissionError:
+            app.logger.error(f"Permission denied reading {file_path}")
+        except Exception as e:
+            app.logger.error(f"Error parsing {file_path}: {str(e)}")
     return env_vars
 
 def write_env_file(file_path, env_vars):
     """Write environment variables back to .env file"""
-    # Create backup
-    if os.path.exists(file_path):
-        backup_path = f"{file_path}.backup.{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        shutil.copy2(file_path, backup_path)
-    
-    with open(file_path, 'w') as f:
-        for key, value in env_vars.items():
-            f.write(f"{key}={value}\n")
+    try:
+        # Create backup
+        if os.path.exists(file_path):
+            backup_path = f"{file_path}.backup.{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            shutil.copy2(file_path, backup_path)
+        
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        
+        with open(file_path, 'w') as f:
+            for key, value in env_vars.items():
+                f.write(f"{key}={value}\n")
+        
+        # Set proper ownership and permissions
+        if check_root_permissions():
+            # Get www-data user/group IDs
+            www_data_user = pwd.getpwnam('www-data')
+            os.chown(file_path, www_data_user.pw_uid, www_data_user.pw_gid)
+            os.chmod(file_path, 0o644)
+            
+    except Exception as e:
+        app.logger.error(f"Error writing {file_path}: {str(e)}")
+        raise
 
 @app.route('/')
 def editor():
@@ -82,15 +148,17 @@ def commands():
     """Commands page for WemX management"""
     # Get list of system users for dropdown
     try:
-        result = subprocess.run(['cut', '-d:', '-f1', '/etc/passwd'], 
-                              capture_output=True, text=True)
-        all_users = result.stdout.strip().split('\n')
-        # Filter to only show users with home directories
-        system_users = []
-        for user in all_users:
-            home_dir = f'/home/{user}'
-            if os.path.exists(home_dir):
-                system_users.append(user)
+        result = run_command_with_privileges(['cut', '-d:', '-f1', '/etc/passwd'], shell=False)
+        if result['success']:
+            all_users = result['stdout'].strip().split('\n')
+            # Filter to only show users with home directories
+            system_users = []
+            for user in all_users:
+                home_dir = f'/home/{user}'
+                if os.path.exists(home_dir):
+                    system_users.append(user)
+        else:
+            system_users = []
     except:
         system_users = []
     
@@ -105,22 +173,34 @@ def restart_wemx():
             'cd /var/www/wemx && php artisan config:cache',
             'cd /var/www/wemx && php artisan route:cache', 
             'cd /var/www/wemx && php artisan view:cache',
-            'sudo systemctl restart nginx',
-            'sudo systemctl restart php8.1-fpm'  # Adjust PHP version as needed
+            'systemctl restart nginx',
+            'systemctl restart php8.1-fpm',  # Adjust PHP version as needed
+            'systemctl restart php8.2-fpm'   # Alternative PHP version
         ]
         
         output = []
+        success_count = 0
+        
         for cmd in commands:
-            result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=30)
+            result = run_command_with_privileges(cmd, timeout=30)
             output.append(f"Command: {cmd}")
-            output.append(f"Output: {result.stdout}")
-            if result.stderr:
-                output.append(f"Error: {result.stderr}")
+            output.append(f"Output: {result['stdout']}")
+            if result['stderr']:
+                output.append(f"Error: {result['stderr']}")
+            if result['success']:
+                output.append("✅ Success")
+                success_count += 1
+            else:
+                output.append("❌ Failed")
             output.append("---")
         
+        # Fix WemX permissions after restart
+        fix_wemx_permissions()
+        
         return jsonify({
-            'success': True,
-            'output': '\n'.join(output)
+            'success': success_count > len(commands) // 2,  # Success if more than half commands succeeded
+            'output': '\n'.join(output),
+            'message': f'{success_count}/{len(commands)} commands executed successfully'
         })
     except Exception as e:
         return jsonify({
@@ -133,22 +213,29 @@ def clear_cache():
     """Clear WemX cache"""
     try:
         commands = [
-            'cd /var/www/wemx && php artisan cache:clear',
-            'cd /var/www/wemx && php artisan config:clear',
-            'cd /var/www/wemx && php artisan route:clear',
-            'cd /var/www/wemx && php artisan view:clear'
+            'php artisan cache:clear',
+            'php artisan config:clear',
+            'php artisan route:clear',
+            'php artisan view:clear'
         ]
         
         output = []
+        success_count = 0
+        
         for cmd in commands:
-            result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=30)
-            output.append(f"✅ {cmd.split(' && ')[1]}")
-            if result.stderr:
-                output.append(f"⚠️ Warning: {result.stderr}")
+            result = run_command_with_privileges(cmd, cwd='/var/www/wemx')
+            if result['success']:
+                output.append(f"✅ {cmd}")
+                success_count += 1
+            else:
+                output.append(f"❌ {cmd} - {result['stderr']}")
+            
+            if result['stderr'] and 'warning' in result['stderr'].lower():
+                output.append(f"⚠️ Warning: {result['stderr']}")
         
         return jsonify({
-            'success': True,
-            'output': '\n'.join(output) + '\n\n🎉 WemX cache cleared successfully!'
+            'success': success_count == len(commands),
+            'output': '\n'.join(output) + f'\n\n🎉 WemX cache operations completed ({success_count}/{len(commands)} successful)!'
         })
     except Exception as e:
         return jsonify({
@@ -156,27 +243,58 @@ def clear_cache():
             'error': str(e)
         })
 
+def fix_wemx_permissions():
+    """Fix WemX file permissions - internal function"""
+    try:
+        commands = [
+            'chown -R www-data:www-data /var/www/wemx',
+            'find /var/www/wemx -type f -exec chmod 644 {} \\;',
+            'find /var/www/wemx -type d -exec chmod 755 {} \\;',
+            'chmod -R 775 /var/www/wemx/storage',
+            'chmod -R 775 /var/www/wemx/bootstrap/cache',
+            'chmod -R 775 /var/www/wemx/public'
+        ]
+        
+        for cmd in commands:
+            run_command_with_privileges(cmd)
+            
+    except Exception as e:
+        app.logger.error(f"Error fixing permissions: {str(e)}")
+
 @app.route('/update-permissions', methods=['POST'])
 def update_permissions():
     """Fix WemX file permissions"""
     try:
+        if not check_root_permissions():
+            return jsonify({
+                'success': False,
+                'error': 'Root privileges required for permission changes'
+            })
+        
         commands = [
-            'sudo chown -R www-data:www-data /var/www/wemx',
-            'sudo chmod -R 755 /var/www/wemx',
-            'sudo chmod -R 777 /var/www/wemx/storage',
-            'sudo chmod -R 777 /var/www/wemx/bootstrap/cache'
+            'chown -R www-data:www-data /var/www/wemx',
+            'find /var/www/wemx -type f -exec chmod 644 {} \\;',
+            'find /var/www/wemx -type d -exec chmod 755 {} \\;',
+            'chmod -R 775 /var/www/wemx/storage',
+            'chmod -R 775 /var/www/wemx/bootstrap/cache',
+            'chmod -R 775 /var/www/wemx/public',
+            'chmod 600 /var/www/wemx/.env'
         ]
         
         output = []
+        success_count = 0
+        
         for cmd in commands:
-            result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=30)
-            output.append(f"✅ {cmd}")
-            if result.stderr:
-                output.append(f"⚠️ {result.stderr}")
+            result = run_command_with_privileges(cmd, timeout=60)
+            if result['success']:
+                output.append(f"✅ {cmd}")
+                success_count += 1
+            else:
+                output.append(f"❌ {cmd} - {result['stderr']}")
         
         return jsonify({
-            'success': True,
-            'output': '\n'.join(output) + '\n\n🔒 WemX permissions updated successfully!'
+            'success': success_count == len(commands),
+            'output': '\n'.join(output) + f'\n\n🔒 WemX permissions update completed ({success_count}/{len(commands)} successful)!'
         })
     except Exception as e:
         return jsonify({
@@ -188,6 +306,12 @@ def update_permissions():
 def create_user():
     """Create Ubuntu system user"""
     try:
+        if not check_root_permissions():
+            return jsonify({
+                'success': False, 
+                'error': 'Root privileges required for user creation'
+            })
+            
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '').strip()
         
@@ -198,30 +322,30 @@ def create_user():
         if not re.match(r'^[a-z][a-z0-9_-]*$', username):
             return jsonify({'success': False, 'error': 'Invalid username format'})
         
+        # Check if user already exists
+        try:
+            pwd.getpwnam(username)
+            return jsonify({'success': False, 'error': f'User {username} already exists'})
+        except KeyError:
+            pass  # User doesn't exist, proceed with creation
+        
         # Create user
-        create_result = subprocess.run(['sudo', 'useradd', '-m', '-s', '/bin/bash', username], 
-                                     capture_output=True, text=True)
+        create_result = run_command_with_privileges(['useradd', '-m', '-s', '/bin/bash', username], shell=False)
         
-        if create_result.returncode != 0:
-            return jsonify({'success': False, 'error': f'Failed to create user: {create_result.stderr}'})
+        if not create_result['success']:
+            return jsonify({'success': False, 'error': f'Failed to create user: {create_result["stderr"]}'})
         
-        # Set password
-        passwd_process = subprocess.Popen(['sudo', 'passwd', username], 
-                                        stdin=subprocess.PIPE, 
-                                        stdout=subprocess.PIPE, 
-                                        stderr=subprocess.PIPE, 
-                                        text=True)
+        # Set password using chpasswd (more reliable)
+        passwd_result = run_command_with_privileges(f'echo "{username}:{password}" | chpasswd')
         
-        stdout, stderr = passwd_process.communicate(input=f'{password}\n{password}\n')
-        
-        if passwd_process.returncode != 0:
+        if not passwd_result['success']:
             # If password setting failed, remove the user
-            subprocess.run(['sudo', 'userdel', '-r', username], capture_output=True)
-            return jsonify({'success': False, 'error': f'Failed to set password: {stderr}'})
+            run_command_with_privileges(['userdel', '-r', username], shell=False)
+            return jsonify({'success': False, 'error': f'Failed to set password: {passwd_result["stderr"]}'})
         
         return jsonify({
             'success': True,
-            'output': f'User {username} created successfully'
+            'output': f'User {username} created successfully with home directory at /home/{username}'
         })
         
     except Exception as e:
@@ -234,6 +358,12 @@ def create_user():
 def delete_user():
     """Delete Ubuntu system user"""
     try:
+        if not check_root_permissions():
+            return jsonify({
+                'success': False, 
+                'error': 'Root privileges required for user deletion'
+            })
+            
         username = request.form.get('username', '').strip()
         
         if not username:
@@ -242,20 +372,26 @@ def delete_user():
         # Safety check - don't delete system users
         system_users = ['root', 'daemon', 'bin', 'sys', 'sync', 'games', 'man', 'lp', 
                        'mail', 'news', 'uucp', 'proxy', 'www-data', 'backup', 'list', 
-                       'nobody', 'systemd-timesync', 'systemd-network', 'systemd-resolve']
+                       'nobody', 'systemd-timesync', 'systemd-network', 'systemd-resolve',
+                       'ubuntu', 'admin']
         
         if username in system_users:
             return jsonify({'success': False, 'error': 'Cannot delete system users'})
         
-        result = subprocess.run(['sudo', 'userdel', '-r', username], 
-                              capture_output=True, text=True)
+        # Check if user exists
+        try:
+            pwd.getpwnam(username)
+        except KeyError:
+            return jsonify({'success': False, 'error': f'User {username} does not exist'})
         
-        if result.returncode != 0:
-            return jsonify({'success': False, 'error': f'Failed to delete user: {result.stderr}'})
+        result = run_command_with_privileges(['userdel', '-r', username], shell=False)
+        
+        if not result['success']:
+            return jsonify({'success': False, 'error': f'Failed to delete user: {result["stderr"]}'})
         
         return jsonify({
             'success': True,
-            'output': f'User {username} deleted successfully'
+            'output': f'User {username} and home directory deleted successfully'
         })
         
     except Exception as e:
@@ -268,23 +404,29 @@ def delete_user():
 def reset_password():
     """Reset Ubuntu user password"""
     try:
+        if not check_root_permissions():
+            return jsonify({
+                'success': False, 
+                'error': 'Root privileges required for password reset'
+            })
+            
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '').strip()
         
         if not username or not password:
             return jsonify({'success': False, 'error': 'Username and password are required'})
         
-        # Set password
-        passwd_process = subprocess.Popen(['sudo', 'passwd', username], 
-                                        stdin=subprocess.PIPE, 
-                                        stdout=subprocess.PIPE, 
-                                        stderr=subprocess.PIPE, 
-                                        text=True)
+        # Check if user exists
+        try:
+            pwd.getpwnam(username)
+        except KeyError:
+            return jsonify({'success': False, 'error': f'User {username} does not exist'})
         
-        stdout, stderr = passwd_process.communicate(input=f'{password}\n{password}\n')
+        # Set password using chpasswd
+        result = run_command_with_privileges(f'echo "{username}:{password}" | chpasswd')
         
-        if passwd_process.returncode != 0:
-            return jsonify({'success': False, 'error': f'Failed to reset password: {stderr}'})
+        if not result['success']:
+            return jsonify({'success': False, 'error': f'Failed to reset password: {result["stderr"]}'})
         
         return jsonify({
             'success': True,
@@ -316,6 +458,12 @@ def nginx_config():
 def save_nginx_config():
     """Save nginx configuration"""
     try:
+        if not check_root_permissions():
+            return jsonify({
+                'success': False, 
+                'error': 'Root privileges required for nginx configuration changes'
+            })
+            
         nginx_file_path = '/etc/nginx/sites-available/wemx.conf'
         config_content = request.form.get('config_content', '')
         
@@ -328,7 +476,19 @@ def save_nginx_config():
         with open(nginx_file_path, 'w') as f:
             f.write(config_content)
         
-        return jsonify({'success': True, 'message': 'Nginx configuration saved successfully!'})
+        # Test configuration
+        test_result = run_command_with_privileges(['nginx', '-t'], shell=False)
+        
+        if not test_result['success']:
+            # Restore backup if test fails
+            if os.path.exists(backup_path):
+                shutil.copy2(backup_path, nginx_file_path)
+            return jsonify({
+                'success': False, 
+                'error': f'Configuration test failed: {test_result["stderr"]}'
+            })
+        
+        return jsonify({'success': True, 'message': 'Nginx configuration saved and tested successfully!'})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
@@ -336,21 +496,13 @@ def save_nginx_config():
 def test_nginx_config():
     """Test nginx configuration"""
     try:
-        result = subprocess.run(['sudo', 'nginx', '-t'], 
-                              capture_output=True, text=True, timeout=30)
+        result = run_command_with_privileges(['nginx', '-t'], shell=False)
         
-        if result.returncode == 0:
-            return jsonify({
-                'success': True,
-                'output': result.stdout + result.stderr,
-                'message': 'Nginx configuration is valid!'
-            })
-        else:
-            return jsonify({
-                'success': False,
-                'output': result.stdout + result.stderr,
-                'error': 'Nginx configuration has errors!'
-            })
+        return jsonify({
+            'success': result['success'],
+            'output': result['stdout'] + result['stderr'],
+            'message': 'Nginx configuration is valid!' if result['success'] else 'Nginx configuration has errors!'
+        })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
@@ -358,30 +510,28 @@ def test_nginx_config():
 def reload_nginx():
     """Reload nginx configuration"""
     try:
+        if not check_root_permissions():
+            return jsonify({
+                'success': False, 
+                'error': 'Root privileges required for nginx reload'
+            })
+            
         # Test config first
-        test_result = subprocess.run(['sudo', 'nginx', '-t'], 
-                                   capture_output=True, text=True, timeout=30)
+        test_result = run_command_with_privileges(['nginx', '-t'], shell=False)
         
-        if test_result.returncode != 0:
+        if not test_result['success']:
             return jsonify({
                 'success': False,
-                'error': f'Config test failed: {test_result.stderr}'
+                'error': f'Config test failed: {test_result["stderr"]}'
             })
         
         # Reload nginx
-        reload_result = subprocess.run(['sudo', 'systemctl', 'reload', 'nginx'], 
-                                     capture_output=True, text=True, timeout=30)
+        reload_result = run_command_with_privileges(['systemctl', 'reload', 'nginx'], shell=False)
         
-        if reload_result.returncode == 0:
-            return jsonify({
-                'success': True,
-                'output': 'Nginx configuration reloaded successfully!'
-            })
-        else:
-            return jsonify({
-                'success': False,
-                'error': f'Failed to reload nginx: {reload_result.stderr}'
-            })
+        return jsonify({
+            'success': reload_result['success'],
+            'output': 'Nginx configuration reloaded successfully!' if reload_result['success'] else reload_result['stderr']
+        })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
@@ -400,24 +550,15 @@ def update_license():
             return jsonify({'success': False, 'error': 'License key is required'})
         
         # Change to WemX directory and run artisan command
-        cmd = f'cd /var/www/wemx && echo "{license_key}" | php artisan license:update'
+        result = run_command_with_privileges(f'echo "{license_key}" | php artisan license:update', cwd='/var/www/wemx')
         
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=60)
+        output = result['stdout'] + result['stderr']
         
-        output = result.stdout + result.stderr
-        
-        if result.returncode == 0:
-            return jsonify({
-                'success': True,
-                'output': output,
-                'message': 'License updated successfully!'
-            })
-        else:
-            return jsonify({
-                'success': False,
-                'output': output,
-                'error': 'License update failed. Please check the output for details.'
-            })
+        return jsonify({
+            'success': result['success'],
+            'output': output,
+            'message': 'License updated successfully!' if result['success'] else 'License update failed. Please check the output for details.'
+        })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
@@ -425,17 +566,14 @@ def update_license():
 def check_license():
     """Check current WemX license status"""
     try:
-        # Run license check command
-        result = subprocess.run(['php', 'artisan', 'license:check'], 
-                              cwd='/var/www/wemx',
-                              capture_output=True, text=True, timeout=30)
+        result = run_command_with_privileges(['php', 'artisan', 'license:check'], shell=False, cwd='/var/www/wemx')
         
-        output = result.stdout + result.stderr
+        output = result['stdout'] + result['stderr']
         
         return jsonify({
             'success': True,
             'output': output,
-            'valid': result.returncode == 0
+            'valid': result['success']
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
@@ -467,9 +605,16 @@ def save_config():
             backup_path = f"{config_file_path}.backup.{datetime.now().strftime('%Y%m%d_%H%M%S')}"
             shutil.copy2(config_file_path, backup_path)
         
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(config_file_path), exist_ok=True)
+        
         # Write new config
         with open(config_file_path, 'w') as f:
             f.write(config_content)
+        
+        # Set proper permissions
+        if check_root_permissions():
+            os.chmod(config_file_path, 0o600)  # Secure permissions
         
         return jsonify({'success': True, 'message': 'Configuration saved successfully! Restart the admin panel to apply changes.'})
     except Exception as e:
@@ -535,7 +680,8 @@ def test_config():
             })
         finally:
             # Clean up temporary file
-            os.unlink(temp_file_path)
+            if os.path.exists(temp_file_path):
+                os.unlink(temp_file_path)
             
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
@@ -544,20 +690,18 @@ def test_config():
 def restart_admin():
     """Restart the admin panel service"""
     try:
-        # Try to restart the systemd service
-        result = subprocess.run(['sudo', 'systemctl', 'restart', 'wemx-admin'], 
-                              capture_output=True, text=True, timeout=30)
+        if not check_root_permissions():
+            return jsonify({
+                'success': False, 
+                'error': 'Root privileges required for service restart'
+            })
+            
+        result = run_command_with_privileges(['systemctl', 'restart', 'wemx-admin'], shell=False)
         
-        if result.returncode == 0:
-            return jsonify({
-                'success': True,
-                'output': 'Admin panel service restart initiated. Please refresh the page in a few seconds.'
-            })
-        else:
-            return jsonify({
-                'success': False,
-                'error': f'Failed to restart service: {result.stderr}'
-            })
+        return jsonify({
+            'success': result['success'],
+            'output': 'Admin panel service restart initiated. Please refresh the page in a few seconds.' if result['success'] else result['stderr']
+        })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
@@ -572,27 +716,44 @@ def status():
         env_status = os.path.exists(ENV_FILE_PATH)
         
         # Check web server status
-        nginx_status = subprocess.run(['systemctl', 'is-active', 'nginx'], 
-                                    capture_output=True, text=True).stdout.strip() == 'active'
+        nginx_result = run_command_with_privileges(['systemctl', 'is-active', 'nginx'], shell=False)
+        nginx_status = nginx_result['success'] and nginx_result['stdout'].strip() == 'active'
         
         # Check PHP-FPM status (common versions)
-        php_versions = ['8.1', '8.0', '7.4']
+        php_versions = ['8.2', '8.1', '8.0', '7.4']
         php_status = False
+        active_php_version = None
+        
         for version in php_versions:
-            if subprocess.run(['systemctl', 'is-active', f'php{version}-fpm'], 
-                            capture_output=True, text=True).stdout.strip() == 'active':
+            result = run_command_with_privileges(['systemctl', 'is-active', f'php{version}-fpm'], shell=False)
+            if result['success'] and result['stdout'].strip() == 'active':
                 php_status = True
+                active_php_version = version
                 break
+        
+        # Check root privileges
+        root_status = check_root_permissions()
         
         return jsonify({
             'wemx_directory': wemx_status,
             'env_file': env_status,
             'nginx': nginx_status,
             'php_fpm': php_status,
-            'overall_status': all([wemx_status, env_status, nginx_status, php_status])
+            'php_version': active_php_version,
+            'root_privileges': root_status,
+            'overall_status': all([wemx_status, env_status, nginx_status, php_status, root_status])
         })
     except Exception as e:
         return jsonify({'error': str(e)})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # Check if running as root
+    if not check_root_permissions():
+        print("WARNING: Not running as root. Some functionality may be limited.")
+        print("For full functionality, run as root or configure proper sudo permissions.")
+    
+    # Ensure WemX permissions are correct on startup
+    if check_root_permissions():
+        fix_wemx_permissions()
+    
+    app.run(host='0.0.0.0', port=5000, debug=False)  # Disable debug in production
