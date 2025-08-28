@@ -35,7 +35,7 @@
             </a>
             <div class="flex items-center lg:order-2">
                 <div class="hidden mt-2 mr-4 sm:inline-block">
-                    <span class="text-sm text-gray-300">Nginx Configuration</span>
+                    <span class="text-sm text-gray-300">Nginx Configuration & SSL</span>
                 </div>
             </div>
             <div class="hidden justify-between items-center w-full lg:flex lg:w-auto lg:order-1">
@@ -74,6 +74,110 @@
             {% endif %}
         {% endwith %}
 
+        <!-- Certbot Installation Card -->
+        <div class="bg-gray-800 border border-gray-700 rounded-lg shadow-sm mb-6">
+            <div class="p-6 border-b border-gray-700">
+                <h3 class="text-lg font-semibold text-white mb-2">SSL Certificate Management (Certbot)</h3>
+                <p class="text-sm text-gray-400 mb-3">Install and manage SSL certificates with Let's Encrypt</p>
+                
+                <!-- SSL Status Notice -->
+                <div class="flex items-center p-3 text-sm text-blue-300 bg-blue-900/30 border border-blue-800 rounded-lg">
+                    <svg class="flex-shrink-0 inline w-4 h-4 me-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span><strong>Info:</strong> Nginx will be automatically stopped before running Certbot commands and restarted afterwards.</span>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <!-- SSL Management Buttons -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
+                    <button onclick="installCertbot()" class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-purple-600 border border-transparent rounded-lg hover:bg-purple-700 focus:ring-4 focus:ring-purple-300">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
+                        </svg>
+                        Install Certbot
+                    </button>
+                    
+                    <button onclick="showCertificateForm()" class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 focus:ring-4 focus:ring-green-300">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                        </svg>
+                        Generate SSL Certificate
+                    </button>
+                    
+                    <button onclick="renewCertificates()" class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-yellow-600 border border-transparent rounded-lg hover:bg-yellow-700 focus:ring-4 focus:ring-yellow-300">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        Renew Certificates
+                    </button>
+                    
+                    <button onclick="listCertificates()" class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-lg hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-300">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        List Certificates
+                    </button>
+                    
+                    <button onclick="showRevocationForm()" class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700 focus:ring-4 focus:ring-red-300">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.268 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                        Revoke Certificate
+                    </button>
+                    
+                    <button onclick="checkCertbotStatus()" class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-gray-600 border border-transparent rounded-lg hover:bg-gray-700 focus:ring-4 focus:ring-gray-300">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Check Status
+                    </button>
+                </div>
+
+                <!-- Certificate Generation Form -->
+                <div id="certificate-form" class="hidden mb-6 p-4 bg-gray-700 border border-gray-600 rounded-lg">
+                    <h4 class="text-md font-medium text-white mb-3">Generate SSL Certificate</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="domain-input" class="block mb-2 text-sm font-medium text-gray-300">Domain Name(s)</label>
+                            <input type="text" id="domain-input" class="bg-gray-600 border border-gray-500 text-white text-sm rounded-lg focus:ring-wemx-500 focus:border-wemx-500 block w-full p-2.5 placeholder-gray-400" placeholder="example.com,www.example.com" />
+                            <p class="mt-1 text-xs text-gray-400">Separate multiple domains with commas</p>
+                        </div>
+                        <div>
+                            <label for="email-input" class="block mb-2 text-sm font-medium text-gray-300">Email Address</label>
+                            <input type="email" id="email-input" class="bg-gray-600 border border-gray-500 text-white text-sm rounded-lg focus:ring-wemx-500 focus:border-wemx-500 block w-full p-2.5 placeholder-gray-400" placeholder="admin@example.com" />
+                            <p class="mt-1 text-xs text-gray-400">Required for certificate notifications</p>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex space-x-3">
+                        <button onclick="generateCertificate()" class="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700">Generate Certificate</button>
+                        <button onclick="hideCertificateForm()" class="px-4 py-2 text-sm font-medium text-gray-400 bg-gray-600 rounded-lg hover:bg-gray-700">Cancel</button>
+                    </div>
+                </div>
+
+                <!-- Certificate Revocation Form -->
+                <div id="revocation-form" class="hidden mb-6 p-4 bg-gray-700 border border-red-600 rounded-lg">
+                    <h4 class="text-md font-medium text-white mb-3">Revoke SSL Certificate</h4>
+                    <div class="mb-4">
+                        <label for="revoke-domain-input" class="block mb-2 text-sm font-medium text-gray-300">Domain Name</label>
+                        <input type="text" id="revoke-domain-input" class="bg-gray-600 border border-gray-500 text-white text-sm rounded-lg focus:ring-red-500 focus:border-red-500 block w-full p-2.5 placeholder-gray-400" placeholder="example.com" />
+                        <p class="mt-1 text-xs text-gray-400">Domain name of the certificate to revoke</p>
+                    </div>
+                    <div class="flex items-center p-3 text-sm text-red-300 bg-red-900/30 border border-red-800 rounded-lg mb-4">
+                        <svg class="flex-shrink-0 inline w-4 h-4 me-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                        </svg>
+                        <span><strong>Warning:</strong> Revoking a certificate will permanently invalidate it. This action cannot be undone.</span>
+                    </div>
+                    <div class="flex space-x-3">
+                        <button onclick="revokeCertificate()" class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700">Revoke Certificate</button>
+                        <button onclick="hideRevocationForm()" class="px-4 py-2 text-sm font-medium text-gray-400 bg-gray-600 rounded-lg hover:bg-gray-700">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Nginx Configuration Editor Card -->
         <div class="bg-gray-800 border border-gray-700 rounded-lg shadow-sm">
             <div class="p-6 border-b border-gray-700">
@@ -106,7 +210,22 @@
                         Save Configuration
                     </button>
                     
-                    <button onclick="reloadNginx()" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 focus:ring-4 focus:ring-green-300">
+                    <button onclick="stopNginx()" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700 focus:ring-4 focus:ring-red-300">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9l3 3m0 0l3-3m-3 3V6"></path>
+                        </svg>
+                        Stop Nginx
+                    </button>
+                    
+                    <button onclick="startNginx()" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 focus:ring-4 focus:ring-green-300">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.586a1 1 0 01.707.293l2.414 2.414a1 1 0 00.707.293H15"></path>
+                        </svg>
+                        Start Nginx
+                    </button>
+                    
+                    <button onclick="reloadNginx()" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-wemx-600 border border-transparent rounded-lg hover:bg-wemx-700 focus:ring-4 focus:ring-wemx-300">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                         </svg>
@@ -138,6 +257,7 @@
             <p class="text-xs text-gray-400">Editing: <code class="bg-gray-700 px-2 py-1 rounded">/etc/nginx/sites-available/wemx.conf</code></p>
             <p class="text-xs text-gray-400 mt-1">Backup files are automatically created when saving changes</p>
             <p class="text-xs text-gray-400 mt-1">🔧 Changes take effect after reloading nginx</p>
+            <p class="text-xs text-gray-400 mt-1">🔒 SSL certificates are stored in <code class="bg-gray-700 px-1 rounded">/etc/letsencrypt/</code></p>
         </div>
 
         <!-- Command Output -->
@@ -164,6 +284,54 @@
 
     <script src="https://cdn.jsdelivr.net/npm/flowbite@2.5.1/dist/flowbite.min.js"></script>
     <script>
+        // Helper function for API calls with proper error handling
+        async function makeApiCall(url, data = {}, method = 'POST') {
+            try {
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    }
+                };
+                
+                if (method === 'POST' && Object.keys(data).length > 0) {
+                    options.body = new URLSearchParams(data);
+                }
+                
+                const response = await fetch(url, options);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    return {
+                        success: false,
+                        error: `Server Error (${response.status}): ${response.statusText}`,
+                        output: errorText,
+                        isServerError: true
+                    };
+                }
+                
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const responseText = await response.text();
+                    return {
+                        success: false,
+                        error: `Backend route '${url}' not implemented or not returning JSON`,
+                        output: responseText.substring(0, 500) + (responseText.length > 500 ? '...' : ''),
+                        isImplementationError: true
+                    };
+                }
+                
+                return await response.json();
+            } catch (error) {
+                return {
+                    success: false,
+                    error: `Network/Parse Error: ${error.message}`,
+                    output: `This usually means the backend route '${url}' doesn't exist yet or there's a network issue.`,
+                    isNetworkError: true
+                };
+            }
+        }
+
         function showLoading() {
             document.getElementById('loading').classList.remove('hidden');
         }
@@ -184,28 +352,171 @@
             outputSection.scrollIntoView({ behavior: 'smooth' });
         }
 
+        // Form management functions
+        function showCertificateForm() {
+            document.getElementById('certificate-form').classList.remove('hidden');
+            document.getElementById('revocation-form').classList.add('hidden');
+        }
+
+        function hideCertificateForm() {
+            document.getElementById('certificate-form').classList.add('hidden');
+        }
+
+        function showRevocationForm() {
+            document.getElementById('revocation-form').classList.remove('hidden');
+            document.getElementById('certificate-form').classList.add('hidden');
+        }
+
+        function hideRevocationForm() {
+            document.getElementById('revocation-form').classList.add('hidden');
+        }
+
+        // Certbot functions (updated to use helper)
+        async function installCertbot() {
+            if (!confirm('Install Certbot and its nginx plugin?\n\nThis will update system packages and install certbot.')) {
+                return;
+            }
+            
+            showLoading();
+            const result = await makeApiCall('/install-certbot');
+            
+            if (result.success) {
+                showOutput('✅ ' + result.message + '\n\n' + result.output);
+            } else {
+                showOutput('❌ Failed to install Certbot: ' + result.error + (result.output ? '\n\n' + result.output : ''), true);
+            }
+            hideLoading();
+        }
+
+        async function generateCertificate() {
+            const domains = document.getElementById('domain-input').value.trim();
+            const email = document.getElementById('email-input').value.trim();
+            
+            if (!domains || !email) {
+                alert('Please enter both domain name(s) and email address');
+                return;
+            }
+            
+            if (!confirm(`Generate SSL certificate for: ${domains}\n\nThis will:\n1. Stop Nginx\n2. Generate the certificate\n3. Configure Nginx\n4. Start Nginx\n\nContinue?`)) {
+                return;
+            }
+            
+            showLoading();
+            const result = await makeApiCall('/generate-certificate', { domains, email });
+            
+            if (result.success) {
+                showOutput('✅ ' + result.message + '\n\n' + result.output);
+                hideCertificateForm();
+            } else {
+                showOutput('❌ Failed to generate certificate: ' + result.error + (result.output ? '\n\n' + result.output : ''), true);
+            }
+            hideLoading();
+        }
+
+        async function renewCertificates() {
+            if (!confirm('Renew all SSL certificates?\n\nThis will:\n1. Stop Nginx\n2. Renew certificates that are due for renewal\n3. Start Nginx\n\nContinue?')) {
+                return;
+            }
+            
+            showLoading();
+            const result = await makeApiCall('/renew-certificates');
+            
+            if (result.success) {
+                showOutput('✅ ' + result.message + '\n\n' + result.output);
+            } else {
+                showOutput('❌ Failed to renew certificates: ' + result.error + (result.output ? '\n\n' + result.output : ''), true);
+            }
+            hideLoading();
+        }
+
+        async function listCertificates() {
+            showLoading();
+            const result = await makeApiCall('/list-certificates');
+            
+            if (result.success) {
+                showOutput('📋 Certificate List:\n\n' + result.output);
+            } else {
+                showOutput('❌ Failed to list certificates: ' + result.error + (result.output ? '\n\n' + result.output : ''), true);
+            }
+            hideLoading();
+        }
+
+        async function revokeCertificate() {
+            const domain = document.getElementById('revoke-domain-input').value.trim();
+            
+            if (!domain) {
+                alert('Please enter the domain name of the certificate to revoke');
+                return;
+            }
+            
+            if (!confirm(`⚠️ DANGER: Revoke SSL certificate for ${domain}?\n\nThis action:\n- Will permanently invalidate the certificate\n- CANNOT be undone\n- May cause SSL errors for visitors\n\nAre you absolutely sure?`)) {
+                return;
+            }
+            
+            showLoading();
+            const result = await makeApiCall('/revoke-certificate', { domain });
+            
+            if (result.success) {
+                showOutput('⚠️ ' + result.message + '\n\n' + result.output);
+                hideRevocationForm();
+            } else {
+                showOutput('❌ Failed to revoke certificate: ' + result.error + (result.output ? '\n\n' + result.output : ''), true);
+            }
+            hideLoading();
+        }
+
+        async function checkCertbotStatus() {
+            showLoading();
+            const result = await makeApiCall('/check-certbot-status');
+            
+            if (result.success) {
+                showOutput('ℹ️ Certbot Status:\n\n' + result.output);
+            } else {
+                showOutput('❌ Failed to check status: ' + result.error + (result.output ? '\n\n' + result.output : ''), true);
+            }
+            hideLoading();
+        }
+
+        // Nginx management functions (updated to use helper)
+        async function stopNginx() {
+            if (!confirm('Stop Nginx server?\n\nThis will make your website temporarily unavailable.')) {
+                return;
+            }
+            
+            showLoading();
+            const result = await makeApiCall('/stop-nginx');
+            
+            if (result.success) {
+                showOutput('🛑 ' + result.message + '\n\n' + result.output);
+            } else {
+                showOutput('❌ Failed to stop nginx: ' + result.error + (result.output ? '\n\n' + result.output : ''), true);
+            }
+            hideLoading();
+        }
+
+        async function startNginx() {
+            showLoading();
+            const result = await makeApiCall('/start-nginx');
+            
+            if (result.success) {
+                showOutput('▶️ ' + result.message + '\n\n' + result.output);
+            } else {
+                showOutput('❌ Failed to start nginx: ' + result.error + (result.output ? '\n\n' + result.output : ''), true);
+            }
+            hideLoading();
+        }
+
+        // Original nginx functions (updated to use helper)
         async function testConfig() {
             showLoading();
-            try {
-                const response = await fetch('/test-nginx-config', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    }
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    showOutput(result.output + '\n\n✅ ' + result.message);
-                } else {
-                    showOutput(result.output + '\n\n❌ ' + result.error, true);
-                }
-            } catch (error) {
-                showOutput(`Network Error: ${error.message}`, true);
-            } finally {
-                hideLoading();
+            const result = await makeApiCall('/test-nginx-config');
+            
+            if (result.success) {
+                showOutput(result.output + '\n\n✅ ' + result.message);
+            } else {
+                showOutput(result.output + '\n\n❌ ' + result.error, true);
             }
+            hideLoading();
         }
 
         async function saveConfig() {
@@ -221,29 +532,14 @@
             }
             
             showLoading();
-            try {
-                const response = await fetch('/save-nginx-config', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: new URLSearchParams({
-                        config_content: configContent
-                    })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    showOutput('✅ ' + result.message + '\n\nNext step: Test configuration and reload nginx');
-                } else {
-                    showOutput('❌ Error saving configuration: ' + result.error, true);
-                }
-            } catch (error) {
-                showOutput(`Network Error: ${error.message}`, true);
-            } finally {
-                hideLoading();
+            const result = await makeApiCall('/save-nginx-config', { config_content: configContent });
+            
+            if (result.success) {
+                showOutput('✅ ' + result.message + '\n\nNext step: Test configuration and reload nginx');
+            } else {
+                showOutput('❌ Error saving configuration: ' + result.error, true);
             }
+            hideLoading();
         }
 
         async function reloadNginx() {
@@ -252,26 +548,14 @@
             }
             
             showLoading();
-            try {
-                const response = await fetch('/reload-nginx', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    }
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    showOutput('✅ ' + result.output + '\n\nNginx reloaded successfully!');
-                } else {
-                    showOutput('❌ Failed to reload nginx: ' + result.error, true);
-                }
-            } catch (error) {
-                showOutput(`Network Error: ${error.message}`, true);
-            } finally {
-                hideLoading();
+            const result = await makeApiCall('/reload-nginx');
+            
+            if (result.success) {
+                showOutput('✅ ' + result.output + '\n\nNginx reloaded successfully!');
+            } else {
+                showOutput('❌ Failed to reload nginx: ' + result.error, true);
             }
+            hideLoading();
         }
 
         // Auto-save warning
